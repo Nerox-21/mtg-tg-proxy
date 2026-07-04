@@ -16,11 +16,11 @@ jobs:
           sudo mv mtg-2.1.7-linux-amd64/mtg /usr/local/bin/mtg
           sudo chmod +x /usr/local/bin/mtg
 
-      - name: Install bore
+      - name: Install cloudflared
         run: |
-          curl -L https://github.com/ekzhang/bore/releases/download/v0.5.0/bore-v0.5.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
-          sudo mv bore /usr/local/bin/bore
-          sudo chmod +x /usr/local/bin/bore
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          sudo mv cloudflared /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
 
       - name: Prepare secret
         run: |
@@ -33,7 +33,7 @@ jobs:
           fi
           echo "secret=$SECRET" >> $GITHUB_ENV
 
-      - name: Run mtg and bore tunnel
+      - name: Run mtg and cloudflare tunnel
         run: |
           cat > mtg.toml << EOF
           secret = "${{ env.secret }}"
@@ -41,4 +41,4 @@ jobs:
           EOF
           mtg run mtg.toml &
           sleep 2
-          bore local 3128 --to bore.pub --port 443
+          cloudflared tunnel --url tcp://localhost:3128 --protocol http2
