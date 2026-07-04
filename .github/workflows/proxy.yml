@@ -1,0 +1,44 @@
+name: MTG Proxy
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  run-proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Install mtg
+        run: |
+          curl -L https://github.com/9seconds/mtg/releases/download/v2.1.7/mtg-2.1.7-linux-amd64.tar.gz -o mtg.tar.gz
+          tar -xzf mtg.tar.gz
+          sudo mv mtg-2.1.7-linux-amd64/mtg /usr/local/bin/mtg
+          sudo chmod +x /usr/local/bin/mtg
+
+      - name: Install bore
+        run: |
+          curl -L https://github.com/ekzhang/bore/releases/download/v0.5.0/bore-v0.5.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
+          sudo mv bore /usr/local/bin/bore
+          sudo chmod +x /usr/local/bin/bore
+
+      - name: Prepare secret
+        run: |
+          if [ -z "${{ secrets.MTG_SECRET }}" ]; then
+            SECRET=$(mtg generate-secret --hex google.com)
+            echo "GENERATED NEW SECRET (save this in repo secrets): $SECRET"
+          else
+            SECRET="${{ secrets.MTG_SECRET }}"
+            echo "Using saved secret"
+          fi
+          echo "secret=$SECRET" >> $GITHUB_ENV
+
+      - name: Run mtg and bore tunnel
+        run: |
+          cat > mtg.toml << EOF
+          secret = "${{ env.secret }}"
+          bind-to = "0.0.0.0:3128"
+          EOF
+          mtg run mtg.toml &
+          sleep 2
+          bore local 3128 --to bore.pub
