@@ -41,4 +41,4 @@ jobs:
           EOF
           mtg run mtg.toml &
           sleep 2
-          bore local 3128 --to bore.pub
+          bore local 3128 --to bore.pub --port 443
